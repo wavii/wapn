@@ -1,0 +1,17 @@
+awesomesauce:
+  gateway_host: <%= "gateway.foo.bar.baz" %>
+  gateway_port: 54321
+  feedback_host: feedback.push.baz.bar
+  feedback_port: <%= 9999 %>
+  log_level: debug
+
+sandbox_env:
+  cert_bundle_path: cert_bundle.pem
+  environment: sandbox
+
+prod_env:
+  cert_bundle_path: cert_bundle.pem
+  environment: production
+
+default_env:
+  cert_bundle_path: cert_bundle.pem
