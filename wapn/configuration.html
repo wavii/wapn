@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="en"><head><title>wapn/configuration</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../"><meta name="groc-document-path" content="wapn/configuration"><meta name="groc-project-path" content="lib/wapn/configuration.rb"><meta name="groc-github-url" content="https://github.com/wavii/wapn"><link rel="stylesheet" type="text/css" media="all" href="../assets/style.css"><script type="text/javascript" src="../assets/behavior.js"></script><body><div id="meta"><div class="file-path"><a href="https://github.com/wavii/wapn/blob/master/lib/wapn/configuration.rb">lib/wapn/configuration.rb</a></div></div><div id="document"><div class="segment"><div class="comments"><div class="wrapper"><h1 id="configuration">Configuration</h1></div></div></div><div class="segment"><div class="code"><div class="wrapper"><span class="nb">require</span> <span class="s2">&quot;wapn/provider&quot;</span>
+
+<span class="k">module</span> <span class="nn">WAPN</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>This is extended into <a href="../wapn.html"><code>WAPN</code> proper</a> to provide easy construction and access to
+your configured providers.</p></div></div><div class="code"><div class="wrapper">  <span class="k">module</span> <span class="nn">Configuration</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>Returns the named provider.</p></div></div><div class="code"><div class="wrapper">    <span class="k">def</span> <span class="nf">provider</span><span class="p">(</span><span class="nb">name</span><span class="p">)</span>
+      <span class="k">return</span> <span class="kp">nil</span> <span class="k">unless</span> <span class="vi">@providers</span>
+
+      <span class="vi">@providers</span><span class="o">[</span><span class="nb">name</span><span class="o">.</span><span class="n">to_sym</span><span class="o">]</span>
+    <span class="k">end</span>
+
+    <span class="kp">attr_reader</span> <span class="ss">:providers</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><h2 id="wapnload-config">WAPN.load_config</h2>
+
+<p>Reads a config from YAML file, or passed as a Hash.  The configuration is a map of provider
+names (identifiers used by your app) to the specific configuration values for that particular
+provider (they are passed to <a href="provider.html"><code>Provider.new</code></a>).</p></div></div><div class="code"><div class="wrapper">    <span class="k">def</span> <span class="nf">load_config</span><span class="p">(</span><span class="n">path_or_hash</span><span class="p">)</span>
+      <span class="n">config</span> <span class="o">=</span> <span class="n">path_or_hash</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="no">Hash</span><span class="p">)</span> <span class="p">?</span> <span class="n">path_or_hash</span> <span class="p">:</span> <span class="n">load_yaml_config</span><span class="p">(</span><span class="n">path_or_hash</span><span class="p">)</span>
+
+      <span class="vi">@providers</span> <span class="o">||=</span> <span class="p">{}</span>
+      <span class="n">config</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="nb">name</span><span class="p">,</span> <span class="n">options</span><span class="o">|</span>
+        <span class="vi">@providers</span><span class="o">[</span><span class="nb">name</span><span class="o">.</span><span class="n">to_sym</span><span class="o">]</span> <span class="o">=</span> <span class="no">Provider</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="nb">name</span><span class="p">:</span> <span class="nb">name</span><span class="p">))</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+
+  <span class="kp">private</span>
+
+    <span class="k">def</span> <span class="nf">load_yaml_config</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+      <span class="nb">require</span> <span class="s2">&quot;erb&quot;</span>
+      <span class="nb">require</span> <span class="s2">&quot;yaml&quot;</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>We do not execute this in SAFE mode to keep things simple.  It <em>is</em> a slim security risk,
+but not one worth mitigating.</p>
+
+<p>For example, an attacker could point the config path to a remote URL (with open-uri loaded)
+and enable themselves to execute code at configure time.  Of course, if they've accomplished
+that, your app is likely already compromised.</p></div></div><div class="code"><div class="wrapper">      <span class="n">config_template</span> <span class="o">=</span> <span class="no">ERB</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">)</span>
+
+      <span class="no">YAML</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config_template</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">end</span>
+
+  <span class="k">end</span>
+<span class="k">end</span></div></div></div></div></body></html>

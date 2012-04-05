@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="en"><head><title>wapn/delivery_error</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../"><meta name="groc-document-path" content="wapn/delivery_error"><meta name="groc-project-path" content="lib/wapn/delivery_error.rb"><meta name="groc-github-url" content="https://github.com/wavii/wapn"><link rel="stylesheet" type="text/css" media="all" href="../assets/style.css"><script type="text/javascript" src="../assets/behavior.js"></script><body><div id="meta"><div class="file-path"><a href="https://github.com/wavii/wapn/blob/master/lib/wapn/delivery_error.rb">lib/wapn/delivery_error.rb</a></div></div><div id="document"><div class="segment"><div class="code"><div class="wrapper"><span class="k">module</span> <span class="nn">WAPN</span>
+  <span class="k">class</span> <span class="nc">DeliveryError</span>
+
+    <span class="no">FAILURE_REASONS</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="kp">nil</span> <span class="o">=&gt;</span> <span class="s2">&quot;Unknown reason (no response from APNs)&quot;</span><span class="p">,</span>
+      <span class="mi">0</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: No errors encountered&quot;</span><span class="p">,</span> <span class="c1"># Seriously?</span>
+      <span class="mi">1</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Processing Error&quot;</span><span class="p">,</span>
+      <span class="mi">2</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Missing device token&quot;</span><span class="p">,</span>
+      <span class="mi">3</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Missing topic&quot;</span><span class="p">,</span>
+      <span class="mi">4</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Missing payload&quot;</span><span class="p">,</span>
+      <span class="mi">5</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Invalid token size&quot;</span><span class="p">,</span>
+      <span class="mi">6</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Invalid topic size&quot;</span><span class="p">,</span>
+      <span class="mi">7</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Invalid payload size&quot;</span><span class="p">,</span>
+      <span class="mi">8</span>   <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Invalid token&quot;</span><span class="p">,</span>
+      <span class="mi">255</span> <span class="o">=&gt;</span> <span class="s2">&quot;APNs Error: Unknown error&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">error_code</span><span class="o">=</span><span class="kp">nil</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="kp">nil</span><span class="p">)</span>
+      <span class="vi">@error_code</span> <span class="o">=</span> <span class="n">error_code</span>
+      <span class="vi">@identifier</span> <span class="o">=</span> <span class="n">identifier</span>
+    <span class="k">end</span>
+
+    <span class="kp">attr_reader</span> <span class="ss">:error_code</span>
+    <span class="kp">attr_reader</span> <span class="ss">:identifier</span>
+
+    <span class="k">def</span> <span class="nf">reason</span>
+      <span class="no">FAILURE_REASONS</span><span class="o">[</span><span class="vi">@error_code</span><span class="o">]</span> <span class="o">||</span> <span class="s2">&quot;Unknown reason&quot;</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">inspect</span>
+      <span class="s2">&quot;#&lt;</span><span class="si">#{</span><span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> &#39;</span><span class="si">#{</span><span class="nb">self</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">&#39; @identifier=</span><span class="si">#{</span><span class="vi">@identifier</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+    <span class="k">end</span>
+
+    <span class="k">class</span> <span class="o">&lt;&lt;</span> <span class="nb">self</span>
+
+      <span class="k">def</span> <span class="nf">from_bytes</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">self</span><span class="o">.</span><span class="n">new</span> <span class="k">unless</span> <span class="n">bytes</span> <span class="o">&amp;&amp;</span> <span class="n">bytes</span><span class="o">.</span><span class="n">bytesize</span> <span class="o">&gt;=</span> <span class="mi">6</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">bytes</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s2">&quot;ccN&quot;</span><span class="p">)</span>
+        <span class="nb">self</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">result</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span><span class="p">,</span> <span class="n">result</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">)</span>
+      <span class="k">end</span>
+
+    <span class="k">end</span>
+
+  <span class="k">end</span>
+<span class="k">end</span></div></div></div></div></body></html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><title>wapn/payload</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../"><meta name="groc-document-path" content="wapn/payload"><meta name="groc-project-path" content="lib/wapn/payload.rb"><meta name="groc-github-url" content="https://github.com/wavii/wapn"><link rel="stylesheet" type="text/css" media="all" href="../assets/style.css"><script type="text/javascript" src="../assets/behavior.js"></script><body><div id="meta"><div class="file-path"><a href="https://github.com/wavii/wapn/blob/master/lib/wapn/payload.rb">lib/wapn/payload.rb</a></div></div><div id="document"><div class="segment"><div class="comments"><div class="wrapper"><h1 id="wapnpayload">WAPN::Payload</h1></div></div></div><div class="segment"><div class="code"><div class="wrapper"><span class="k">module</span> <span class="nn">WAPN</span>
+  <span class="k">class</span> <span class="nc">Payload</span>
+
+    <span class="no">APNS_ROOT</span> <span class="o">=</span> <span class="s2">&quot;aps&quot;</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>An abstraction around the APNs JSON format for payloads.</p></div></div><div class="code"><div class="wrapper">    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{})</span>
+      <span class="n">options</span>        <span class="o">=</span> <span class="no">Hash</span><span class="o">[</span> <span class="n">options</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="o">[</span><span class="n">k</span><span class="o">.</span><span class="n">to_s</span><span class="p">,</span> <span class="n">v</span><span class="o">]</span> <span class="p">}</span> <span class="o">]</span>
+      <span class="n">custom_options</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;custom&quot;</span><span class="p">)</span>
+      <span class="vi">@apns_hash</span>     <span class="o">=</span> <span class="p">{}</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>The basic <code>apns</code> properties are supported; they are exactly the same as what Apple
+specifies.</p>
+
+<ul>
+<li><code>alert</code>: A string or hash (for localized alerts)</li>
+<li><code>badge</code>: A numeric value to display as the app's badge value</li>
+<li><code>sound</code>: The name of a sound file in your app's bundle.</li>
+</ul></div></div><div class="code"><div class="wrapper">      <span class="vi">@apns_hash</span><span class="o">[</span><span class="no">APNS_ROOT</span><span class="o">]</span> <span class="o">=</span> <span class="n">options</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>Additional options must be passed via the <code>custom</code> key (every other top level option is
+merged into the <code>apns</code> namespace for future compatibility).</p>
+
+<ul>
+<li><code>custom</code>: Any app-specific properties you would like to pass are grouped into this option.
+        Custom values are merged into the root of the payload (thus, <code>apns</code> cannot be
+        used as a custom property)</li>
+</ul></div></div><div class="code"><div class="wrapper">      <span class="k">if</span> <span class="n">custom_options</span>
+        <span class="n">custom_hash</span> <span class="o">=</span> <span class="no">Hash</span><span class="o">[</span> <span class="n">custom_options</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="o">[</span><span class="n">k</span><span class="o">.</span><span class="n">to_s</span><span class="p">,</span> <span class="n">v</span><span class="o">]</span> <span class="p">}</span> <span class="o">]</span>
+        <span class="n">custom_hash</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">key</span><span class="o">|</span>
+          <span class="k">raise</span> <span class="s2">&quot;&#39;</span><span class="si">#{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is a reserved property, and cannot be specified in :custom!&quot;</span> <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">has_key?</span> <span class="n">key</span>
+        <span class="k">end</span>
+
+        <span class="vi">@apns_hash</span><span class="o">.</span><span class="n">merge!</span> <span class="n">custom_hash</span>
+      <span class="k">end</span>
+    <span class="k">end</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><h2 id="validation-amp-cleanup">Validation &amp; Cleanup</h2></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>Apple has a hard limit of 256 characters for an entire notification message, 45 of which is
+consumed by notification headers &amp; metadata (extended format).  This leaves room for 211 bytes
+of JSON data.</p></div></div><div class="code"><div class="wrapper">    <span class="no">MAX_PAYLOAD_LENGTH</span> <span class="o">=</span> <span class="mi">211</span>
+
+    <span class="k">def</span> <span class="nf">valid_length?</span>
+      <span class="nb">self</span><span class="o">.</span><span class="n">apns_json</span><span class="o">.</span><span class="n">bytesize</span> <span class="o">&lt;=</span> <span class="no">MAX_PAYLOAD_LENGTH</span>
+    <span class="k">end</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>If your payload is too large, truncate the alert and replace the last few characters will
+filler, such as an ellipsis.</p></div></div><div class="code"><div class="wrapper">    <span class="no">DEFAULT_TRUNCATION_FILLER</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\xe2\x80\xa6</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">force_encoding</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="c1"># &quot;…&quot;</span>
+
+    <span class="k">def</span> <span class="nf">truncate_alert!</span><span class="p">(</span><span class="n">trailing_fill</span><span class="o">=</span><span class="no">DEFAULT_TRUNCATION_FILLER</span><span class="p">)</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>require "ruby-debug"; debugger</p></div></div><div class="code"><div class="wrapper">      <span class="n">payload_size</span> <span class="o">=</span> <span class="nb">self</span><span class="o">.</span><span class="n">apns_json</span><span class="o">.</span><span class="n">bytesize</span>
+      <span class="k">return</span> <span class="k">unless</span> <span class="n">payload_size</span> <span class="o">&gt;</span> <span class="no">MAX_PAYLOAD_LENGTH</span>
+
+      <span class="n">alert</span> <span class="o">=</span> <span class="vi">@apns_hash</span><span class="o">[</span><span class="no">APNS_ROOT</span><span class="o">][</span><span class="s2">&quot;alert&quot;</span><span class="o">]</span>
+      <span class="n">alert</span> <span class="o">=</span> <span class="n">alert</span><span class="o">[</span><span class="ss">:body</span><span class="o">]</span> <span class="o">||</span> <span class="n">alert</span><span class="o">[</span><span class="s2">&quot;body&quot;</span><span class="o">]</span> <span class="k">if</span> <span class="n">alert</span><span class="o">.</span><span class="n">is_a?</span> <span class="no">Hash</span>
+      <span class="k">unless</span> <span class="n">alert</span><span class="o">.</span><span class="n">is_a?</span> <span class="nb">String</span>
+        <span class="k">raise</span> <span class="s2">&quot;No valid alert to trim!  Can only trim a String or alert body.  (alert is </span><span class="si">#{</span><span class="n">alert</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="s2">)&quot;</span>
+      <span class="k">end</span>
+
+      <span class="n">target_alert_size</span> <span class="o">=</span> <span class="n">alert</span><span class="o">.</span><span class="n">bytesize</span> <span class="o">-</span> <span class="p">(</span><span class="n">payload_size</span> <span class="o">-</span> <span class="no">MAX_PAYLOAD_LENGTH</span><span class="p">)</span> <span class="o">-</span> <span class="n">trailing_fill</span><span class="o">.</span><span class="n">bytesize</span>
+
+      <span class="k">if</span> <span class="n">target_alert_size</span> <span class="o">&lt;</span> <span class="mi">0</span>
+        <span class="k">raise</span> <span class="s2">&quot;Too many bytes in the rest of the payload; not enough to trim!&quot;</span>
+      <span class="k">end</span>
+
+      <span class="n">size_count</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="n">stop_index</span> <span class="o">=</span> <span class="n">alert</span><span class="o">.</span><span class="n">chars</span><span class="o">.</span><span class="n">find_index</span> <span class="p">{</span> <span class="o">|</span><span class="n">c</span><span class="o">|</span> <span class="n">size_count</span> <span class="o">+=</span> <span class="n">c</span><span class="o">.</span><span class="n">bytesize</span><span class="p">;</span> <span class="n">size_count</span> <span class="o">&gt;</span> <span class="n">target_alert_size</span> <span class="p">}</span>
+
+      <span class="n">alert</span><span class="o">[</span><span class="n">stop_index</span><span class="o">.</span><span class="n">.</span><span class="o">-</span><span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="n">trailing_fill</span>
+    <span class="k">end</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><h2 id="conversation-for-delivery">Conversation for Delivery</h2></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>The generated JSON for APNs</p></div></div><div class="code"><div class="wrapper">    <span class="k">def</span> <span class="nf">apns_json</span>
+      <span class="nb">require</span> <span class="s2">&quot;json&quot;</span>
+
+      <span class="vi">@apns_hash</span><span class="o">.</span><span class="n">to_json</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">end</span></div></div></div><div class="segment"><div class="comments"><div class="wrapper"><p>The hash we are using to generate <code>apns_json</code> from.  This is primarily for testing purposes.</p></div></div><div class="code"><div class="wrapper">    <span class="kp">attr_reader</span> <span class="ss">:apns_hash</span>
+
+  <span class="k">end</span>
+<span class="k">end</span></div></div></div></div></body></html>

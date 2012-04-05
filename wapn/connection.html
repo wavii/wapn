@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><title>wapn/connection</title></head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0"><meta name="groc-relative-root" content="../"><meta name="groc-document-path" content="wapn/connection"><meta name="groc-project-path" content="lib/wapn/connection.rb"><meta name="groc-github-url" content="https://github.com/wavii/wapn"><link rel="stylesheet" type="text/css" media="all" href="../assets/style.css"><script type="text/javascript" src="../assets/behavior.js"></script><body><div id="meta"><div class="file-path"><a href="https://github.com/wavii/wapn/blob/master/lib/wapn/connection.rb">lib/wapn/connection.rb</a></div></div><div id="document"><div class="segment"><div class="comments"><div class="wrapper"><h1 id="wapnconnection">WAPN::Connection</h1></div></div></div><div class="segment"><div class="code"><div class="wrapper"><span class="k">module</span> <span class="nn">WAPN</span>
+
+  <span class="k">class</span> <span class="nc">Connection</span>
+
+    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">,</span> <span class="n">certificate</span><span class="p">,</span> <span class="n">private_key</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+      <span class="vi">@host</span>        <span class="o">=</span> <span class="n">host</span>
+      <span class="vi">@port</span>        <span class="o">=</span> <span class="n">port</span>
+      <span class="vi">@certificate</span> <span class="o">=</span> <span class="n">certificate</span>
+      <span class="vi">@private_key</span> <span class="o">=</span> <span class="n">private_key</span>
+      <span class="vi">@logger</span>      <span class="o">=</span> <span class="n">logger</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">with_socket</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+      <span class="n">block</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="nb">self</span><span class="o">.</span><span class="n">socket</span><span class="p">)</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">socket</span>
+      <span class="k">return</span> <span class="vi">@ssl_sock</span> <span class="k">if</span> <span class="vi">@ssl_sock</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="vi">@ssl_sock</span><span class="o">.</span><span class="n">closed?</span>
+
+      <span class="vi">@logger</span><span class="o">.</span><span class="n">info</span> <span class="s2">&quot;Opening connection to </span><span class="si">#{</span><span class="vi">@host</span><span class="si">}</span><span class="s2">:</span><span class="si">#{</span><span class="vi">@port</span><span class="si">}</span><span class="s2">&quot;</span>
+
+      <span class="nb">require</span> <span class="s2">&quot;openssl&quot;</span>
+
+      <span class="n">context</span>      <span class="o">=</span> <span class="no">OpenSSL</span><span class="o">::</span><span class="no">SSL</span><span class="o">::</span><span class="no">SSLContext</span><span class="o">.</span><span class="n">new</span>
+      <span class="n">context</span><span class="o">.</span><span class="n">cert</span> <span class="o">=</span> <span class="vi">@certificate</span>
+      <span class="n">context</span><span class="o">.</span><span class="n">key</span>  <span class="o">=</span> <span class="vi">@private_key</span>
+
+      <span class="vi">@tcp_sock</span> <span class="o">=</span> <span class="no">TCPSocket</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@host</span><span class="p">,</span> <span class="vi">@port</span><span class="p">)</span>
+      <span class="vi">@ssl_sock</span> <span class="o">=</span> <span class="no">OpenSSL</span><span class="o">::</span><span class="no">SSL</span><span class="o">::</span><span class="no">SSLSocket</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="vi">@tcp_sock</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+      <span class="vi">@ssl_sock</span><span class="o">.</span><span class="n">connect</span>
+
+      <span class="vi">@ssl_sock</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">close!</span>
+      <span class="vi">@logger</span><span class="o">.</span><span class="n">info</span> <span class="s2">&quot;Closing connection to </span><span class="si">#{</span><span class="vi">@host</span><span class="si">}</span><span class="s2">:</span><span class="si">#{</span><span class="vi">@port</span><span class="si">}</span><span class="s2">&quot;</span>
+
+      <span class="vi">@ssl_sock</span><span class="o">.</span><span class="n">close</span>
+      <span class="vi">@tcp_sock</span><span class="o">.</span><span class="n">close</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">inspect</span>
+      <span class="s2">&quot;#&lt;</span><span class="si">#{</span><span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> </span><span class="si">#{</span><span class="vi">@host</span><span class="si">}</span><span class="s2">:</span><span class="si">#{</span><span class="vi">@port</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+    <span class="k">end</span>
+
+  <span class="k">end</span>
+
+<span class="k">end</span></div></div></div></div></body></html>
