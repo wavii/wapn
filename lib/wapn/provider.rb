@@ -154,10 +154,16 @@ module WAPN
     # Collects a batch of notifications from calls to `notify`, and bulk sends them when the block
     # returns.
     def batch(&block)
-      @batch = []
-
+      self.begin_batch
       block.call
+      self.commit_batch
+    end
 
+    def begin_batch
+      @batch = []
+    end
+
+    def commit_batch
       self.send_notifications(@batch)
       @batch = nil
     end

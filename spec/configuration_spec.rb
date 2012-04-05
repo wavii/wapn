@@ -53,6 +53,15 @@ describe WAPN::Configuration do
       provider.logger.level.should == Logger::DEBUG
     end
 
+    it "should provide a batch_all helper" do
+      root.providers.values.each do |provider|
+        provider.should_receive(:begin_batch).once
+        provider.should_receive(:commit_batch).once
+      end
+
+      root.batch_all { }
+    end
+
   end
 
 end

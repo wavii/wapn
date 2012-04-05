@@ -15,6 +15,13 @@ module WAPN
 
     attr_reader :providers
 
+    # Sets up a batch for *all* configured providers.  Go wild!
+    def batch_all(&block)
+      self.providers.values.each(&:begin_batch)
+      block.call
+      self.providers.values.each(&:commit_batch)
+    end
+
     # ## WAPN.load_config
     #
     # Reads a config from YAML file, or passed as a Hash.  The configuration is a map of provider
