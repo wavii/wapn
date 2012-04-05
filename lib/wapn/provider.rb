@@ -190,9 +190,15 @@ module WAPN
         # the remaining notifications.  No delay if we know there can be no extra work.
         read_delay = notifications.size > 1 ? self.delay_for_errors : 0.0
 
-        readable, _, _ = IO.select([socket], nil, nil, read_delay)
-        if readable
-          delivery_error = DeliveryError.from_bytes(socket.read)
+        begin
+          readable, _, _ = IO.select([socket], nil, nil, read_delay)
+          read_bytes = socket.read if readable
+        rescue
+          exception = $!
+        end
+
+        if read_bytes
+          delivery_error = DeliveryError.from_bytes(read_bytes)
           self.logger.warn "Received APNs delivery error: #{delivery_error.inspect}"
         end
       end

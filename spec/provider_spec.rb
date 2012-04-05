@@ -100,15 +100,31 @@ describe WAPN::Provider do
     end
 
     it "should look for delivery errors in the socket, and kill the connection if found (causing a retry)" do
-      IO.should_receive(:select) { |reads, writes, errors, delay|
+      provider.gateway_connection.socket.should_receive(:write).once.ordered
+      IO.should_receive(:select).once.ordered { |reads, writes, errors, delay|
         delay.should == 0.0
         [true, nil, nil]
       }
-
-      provider.gateway_connection.socket.should_receive(:write).twice
-      provider.gateway_connection.socket.should_receive(:read).once
-      provider.gateway_connection.should_receive(:close!).once
+      provider.gateway_connection.socket.should_receive(:read) { "" }.once.ordered
+      provider.gateway_connection.should_receive(:close!).once.ordered
       provider.should_receive(:sleep).once.ordered.with(1.5)
+      provider.gateway_connection.socket.should_receive(:write).once.ordered
+      IO.should_receive(:select).once.ordered
+
+      provider.notify("some_device_token", alert: "ohai")
+    end
+
+    it "should gracefully handle exceptions thrown when reading for errors" do
+      provider.gateway_connection.socket.should_receive(:write).once.ordered
+      IO.should_receive(:select).once.ordered { |reads, writes, errors, delay|
+        delay.should == 0.0
+        [true, nil, nil]
+      }
+      provider.gateway_connection.socket.should_receive(:read).once.ordered.and_raise("fail!")
+      provider.gateway_connection.should_receive(:close!).once.ordered
+      provider.should_receive(:sleep).once.ordered.with(1.5)
+      provider.gateway_connection.socket.should_receive(:write).once.ordered
+      IO.should_receive(:select).once.ordered
 
       provider.notify("some_device_token", alert: "ohai")
     end
